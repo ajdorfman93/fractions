@@ -66,8 +66,92 @@ main {
 	margin-bottom: 20px;
 }
 
+html {
+	background-color: #1b1c1d;
+}
+
 body {
 	display: flex;
 	min-height: 100vh;
 	flex-direction: column;
+	background-color: #1b1c1d !important;
+	color: #f2f2f2;
+}
+
+a {
+	color: #64c8ff;
+}
+
+a:hover, a:focus {
+	color: #9ed9ff;
+}
+
+header.ui.container h1,
+header.ui.container p,
+header.ui.container a {
+	color: #f2f2f2 !important;
+}
+
+.ui.text.container {
+	color: inherit;
+}
+
+.ui.basic.label,
+.ui.label {
+	background: rgba(255, 255, 255, 0.06) !important;
+	color: #f2f2f2 !important;
+	border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.ui.pointing.label::before {
+	background: inherit !important;
+}
+
+.ui.input input {
+	background-color: rgba(255, 255, 255, 0.08) !important;
+	color: #f2f2f2 !important;
+	border: 1px solid rgba(255, 255, 255, 0.18) !important;
+}
+
+.ui.input input:focus {
+	background-color: rgba(255, 255, 255, 0.12) !important;
+	border-color: #54c8ff !important;
+}
+
+.ui.input input::placeholder {
+	color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.ui.button {
+	background-color: #2185d0 !important;
+	color: #f2f2f2 !important;
+}
+
+.ui.button:hover,
+.ui.button:focus {
+	background-color: #1678c2 !important;
+	color: #f2f2f2 !important;
+}
+
+.ui.basic.label.red {
+	background-color: rgba(219, 40, 40, 0.25) !important;
+	border-color: rgba(219, 40, 40, 0.6) !important;
+}
+
+.ui.segment,
+.ui.card,
+.ui.menu,
+.ui.table {
+	background-color: rgba(255, 255, 255, 0.04) !important;
+	color: inherit !important;
+}
+
+footer.ui.vertical.footer.segment {
+	background-color: #111 !important;
+	color: #f2f2f2 !important;
+}
+
+footer .ui.link.list .item,
+footer .ui.link.list .item:hover {
+	color: #9ed9ff !important;
 }
