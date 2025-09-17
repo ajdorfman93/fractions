@@ -55,7 +55,7 @@ text messages, social media posts, or email.">
 			<div class="equal width row">
 				<div class="column">
 					<div class="ui fluid labeled action input">
-						<div class="ui basic label" v-if="simplified.fractionForm">
+						<div class="ui basic label" v-if="original.fractionForm">
 							Original
 						</div>
 						<input value="" type="text" readonly v-model="original.fractionForm">
@@ -66,6 +66,37 @@ text messages, social media posts, or email.">
 								class="icon"></i>
 							{{original.copyText}}
 						</button>
+					</div>
+				</div>
+				<div class="column">
+					<div class="ui form">
+						<div class="field">
+							<label>Unicode Encoding</label>
+							<select class="ui fluid dropdown" v-model="unicode.selectedEncoding">
+								<option v-for="option in unicodeEncodings"
+										:key="option.value"
+										:value="option.value"
+										:disabled="option.value === 'html-named' && !unicode.namedEntityAvailable">
+									{{ option.label }}
+								</option>
+							</select>
+						</div>
+					</div>
+					<div class="ui fluid labeled action input">
+						<div class="ui basic label" v-if="unicode.fractionForm">
+							Unicode
+						</div>
+						<input value="" type="text" readonly v-model="unicode.fractionForm">
+						<button class="ui right labeled icon button" v-clipboard:copy="unicode.fractionForm"
+								v-clipboard:success="copySuccess.bind(this,unicode)"
+								v-clipboard:error="copyFail.bind(this,unicode)" v-on:mouseout="copyReset(unicode)"><i
+								v-bind:class="[unicode.copyIcon]" v-if="copySupported"
+								class="icon"></i>
+							{{unicode.copyText}}
+						</button>
+					</div>
+					<div class="ui pointing red basic label" v-if="unicode.selectedEncoding === 'html-named' && !unicode.namedEntityAvailable && unicode.plain">
+						Named HTML entity not available for this fraction.
 					</div>
 				</div>
 				<div class="column" v-if="simplified.fractionForm">

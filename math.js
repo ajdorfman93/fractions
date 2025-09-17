@@ -128,6 +128,23 @@ var fractions = {
 
 var slash = '⁄';
 
+var namedFractionEntities = {
+	'1/2': '&frac12;',
+	'1/3': '&frac13;',
+	'2/3': '&frac23;',
+	'1/4': '&frac14;',
+	'3/4': '&frac34;',
+	'1/5': '&frac15;',
+	'2/5': '&frac25;',
+	'3/5': '&frac35;',
+	'4/5': '&frac45;',
+	'1/6': '&frac16;',
+	'5/6': '&frac56;',
+	'1/8': '&frac18;',
+	'3/8': '&frac38;',
+	'5/8': '&frac58;',
+	'7/8': '&frac78;'
+};
 function getFraction(numerator, denominator) {
 	numerator = numerator.trim();
 	denominator = denominator.trim();
@@ -140,7 +157,6 @@ function getFraction(numerator, denominator) {
 			if (!correspondingNum) throw new Error();
 			numOut += correspondingNum;
 		});
-		console.log(den);
 		den.split('').forEach(function (val) {
 			var correspondingNum = subscript[val];
 			if (!correspondingNum) throw new Error();
@@ -149,25 +165,58 @@ function getFraction(numerator, denominator) {
 		return numOut + slash + denOut;
 	}
 
-	var orig = map(numerator, denominator);
-	var simp = '';
-	if (denominator != 0 && /^\d+$/.test(numerator) && /^\d+$/.test(denominator)) {
-		simp = reduce(numerator, denominator);
-		simp = map(simp[0].toString(), simp[1].toString());
+	var unicode = '';
+	if (numerator && denominator) {
+		unicode = map(numerator, denominator);
 	}
-	if (simp === orig) simp = '';
-	return [orig, simp];
+
+	var simplified = '';
+	if (unicode && denominator !== '0' && /^\d+$/.test(numerator) && /^\d+$/.test(denominator)) {
+		simplified = reduce(numerator, denominator);
+		simplified = map(simplified[0].toString(), simplified[1].toString());
+		if (simplified === unicode) simplified = '';
+	}
+
+	var plain = '';
+	if (numerator || denominator) {
+		plain = numerator;
+		if (denominator) {
+			plain += '/' + denominator;
+		}
+	}
+
+	return {
+		plain: plain,
+		unicode: unicode,
+		simplified: simplified
+	};
 }
 
 function updateFraction() {
+	var numerator = this.numerator.trim();
+	var denominator = this.denominator.trim();
+	var plain = '';
+	if (numerator || denominator) {
+		plain = numerator;
+		if (denominator) {
+			plain += '/' + denominator;
+		}
+	}
+	this.original.fractionForm = plain;
+	this.unicode.plain = plain;
+
 	try {
-		var frac = getFraction(this.numerator, this.denominator);
-		this.original.fractionForm = frac[0];
-		this.simplified.fractionForm = frac[1];
+		var fraction = getFraction(numerator, denominator);
+		this.unicode.base = fraction.unicode || plain;
+		this.simplified.fractionForm = fraction.simplified;
 		this.inputError = false;
 	} catch (e) {
+		this.unicode.base = '';
+		this.simplified.fractionForm = '';
 		this.inputError = true;
 	}
+
+	this.updateUnicodeOutput();
 }
 
 var app = new Vue({
@@ -175,6 +224,15 @@ var app = new Vue({
 	data: {
 		original: {
 			fractionForm: '',
+			copyText: 'Copy',
+			copyIcon: 'copy outline'
+		},
+		unicode: {
+			fractionForm: '',
+			base: '',
+			plain: '',
+			selectedEncoding: 'character',
+			namedEntityAvailable: false,
 			copyText: 'Copy',
 			copyIcon: 'copy outline'
 		},
@@ -186,13 +244,108 @@ var app = new Vue({
 		numerator: '',
 		denominator: '',
 		copySupported: isCopySupported(),
-		inputError: false
+		inputError: false,
+		unicodeEncodings: [
+			{ value: 'character', label: 'Character' },
+			{ value: 'html-decimal', label: 'HTML Entity (Decimal)' },
+			{ value: 'html-hex', label: 'HTML Entity (Hex)' },
+			{ value: 'html-named', label: 'HTML Entity (Named)' },
+			{ value: 'percent', label: 'Percent Encoding' },
+			{ value: 'code-points', label: 'Unicode Code Points' },
+			{ value: 'utf8', label: 'UTF-8 Bytes' },
+			{ value: 'utf16', label: 'UTF-16 Code Units' },
+			{ value: 'utf32', label: 'UTF-32 Code Points' },
+			{ value: 'decomposition', label: 'Compatibility Decomposition' }
+		]
 	},
 	watch: {
 		numerator: updateFraction,
-		denominator: updateFraction
+		denominator: updateFraction,
+		'unicode.selectedEncoding': function () {
+			this.updateUnicodeOutput();
+		}
 	},
 	methods: {
+		updateUnicodeOutput: function () {
+			var source = this.unicode.base || this.unicode.plain;
+			var plain = this.unicode.plain;
+			this.unicode.namedEntityAvailable = !!(plain && namedFractionEntities[plain]);
+
+			if (!source) {
+				if (this.unicode.fractionForm) {
+					this.unicode.fractionForm = '';
+					this.copyReset(this.unicode);
+				} else {
+					this.unicode.fractionForm = '';
+				}
+				return;
+			}
+
+			var formatted = this.formatUnicodeValue(source, plain, this.unicode.selectedEncoding);
+			if (formatted !== this.unicode.fractionForm) {
+				this.unicode.fractionForm = formatted;
+				this.copyReset(this.unicode);
+			}
+		},
+		formatUnicodeValue: function (source, plain, encoding) {
+			if (!source) return '';
+			var codePoints = Array.from(source);
+
+			switch (encoding) {
+				case 'character':
+					return source;
+				case 'html-decimal':
+					return codePoints.map(function (ch) {
+						return '&#' + ch.codePointAt(0) + ';';
+					}).join('');
+				case 'html-hex':
+					return codePoints.map(function (ch) {
+						return '&#x' + ch.codePointAt(0).toString(16).toUpperCase() + ';';
+					}).join('');
+				case 'html-named':
+					var named = plain && namedFractionEntities[plain];
+					return named || 'Not available for this fraction';
+				case 'percent':
+					return encodeURIComponent(source);
+				case 'code-points':
+					return codePoints.map(function (ch) {
+						var hex = ch.codePointAt(0).toString(16).toUpperCase();
+						return 'U+' + hex.padStart(4, '0');
+					}).join(' ');
+				case 'utf8':
+					var bytes;
+					if (typeof TextEncoder !== 'undefined') {
+						bytes = Array.from(new TextEncoder().encode(source));
+					} else {
+						var escaped = unescape(encodeURIComponent(source));
+						bytes = [];
+						for (var i = 0; i < escaped.length; i++) {
+							bytes.push(escaped.charCodeAt(i));
+						}
+					}
+					return bytes.map(function (byte) {
+						return '0x' + byte.toString(16).toUpperCase().padStart(2, '0');
+					}).join(' ');
+				case 'utf16':
+					var units = [];
+					for (var j = 0; j < source.length; j++) {
+						units.push('0x' + source.charCodeAt(j).toString(16).toUpperCase().padStart(4, '0'));
+					}
+					return units.join(' ');
+				case 'utf32':
+					return codePoints.map(function (ch) {
+						return '0x' + ch.codePointAt(0).toString(16).toUpperCase().padStart(8, '0');
+					}).join(' ');
+				case 'decomposition':
+					var normalized = source.normalize ? source.normalize('NFKD') : source;
+					return Array.from(normalized).map(function (ch) {
+						var hex = ch.codePointAt(0).toString(16).toUpperCase().padStart(4, '0');
+						return ch + ' (U+' + hex + ')';
+					}).join(' - ');
+				default:
+					return source;
+			}
+		},
 		copySuccess: function (obj) {
 			obj.copyText = 'Copied';
 			obj.copyIcon = 'check';
